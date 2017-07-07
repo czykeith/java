@@ -1,0 +1,249 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/tx   
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+        http://www.springframework.org/schema/aop   
+       	http://www.springframework.org/schema/aop/spring-aop-4.0.xsd  
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+        http://www.springframework.org/schema/task  
+		http://www.springframework.org/schema/task/spring-task-4.0.xsd">
+    
+    
+    <!-- 会自动注册了validator  ConversionService  -->
+    <mvc:annotation-driven>
+        <!--enableMatrixVariables="true">-->
+        <mvc:message-converters register-defaults="true">
+            <!-- StringHttpMessageConverter编码为UTF-8，防止乱码 -->
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <constructor-arg value="UTF-8"/>
+                <property name="supportedMediaTypes">
+                    <list>
+                        <bean class="org.springframework.http.MediaType">
+                            <constructor-arg index="0" value="text"/>
+                            <constructor-arg index="1" value="plain"/>
+                            <constructor-arg index="2" value="UTF-8"/>
+                        </bean>
+                        <bean class="org.springframework.http.MediaType">
+                            <constructor-arg index="0" value="*"/>
+                            <constructor-arg index="1" value="*"/>
+                            <constructor-arg index="2" value="UTF-8"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+ 
+            <!-- 避免IE执行AJAX时,返回JSON出现下载文件 -->
+            <bean class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter"
+                  id="fastJsonHttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>application/json;charset=UTF-8</value>
+                    </list>
+                </property>
+                <!--<property name="serializerFeature">-->
+                <!--这个地方加上这个功能吧，能自己配置一些东西，比如时间的格式化，null输出""等等-->
+                <!--</property>-->
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+    
+  
+	
+	<context:component-scan base-package="com.keith.service.impl"/>
+	<context:component-scan base-package="com.keith.core.schedule"/>
+	
+			
+	<bean id="propertyConfig" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:${environment}.properties</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+	    <property name="messageConverters">
+	        <list>
+	            <bean
+	                class="org.springframework.http.converter.StringHttpMessageConverter">
+	                <property name="supportedMediaTypes">
+	                    <list>
+	                        <bean class="org.springframework.http.MediaType">
+	                            <constructor-arg index="0" value="text" />
+	                            <constructor-arg index="1" value="plain" />
+	                            <constructor-arg index="2" value="UTF-8" />
+	                        </bean>
+	                    </list>
+	                </property>
+	            </bean>
+	        </list>
+	    </property>
+	</bean>
+
+	
+	<bean id="dataSourceWrite" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close"> 
+	    <!-- 数据源驱动类可不写，Druid默认会自动根据URL识别DriverClass -->
+	    <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+	    
+		<!-- 基本属性 url、user、password -->
+		<property name="url" value="${wmysqlurl}" />
+		<property name="username" value="${wdbuser}" />
+		<property name="password" value="${wdbpwd}" />
+		
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="initialSize" value="2" />
+		<property name="minIdle" value="2" /> 
+		<property name="maxActive" value="100" />
+		
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="60000" />
+			
+		<property name="removeAbandoned" value="true" />
+        <!-- 超过时间限制多长； -->
+        <property name="removeAbandonedTimeout" value="180" />
+		
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="60000" />
+		
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="300000" />
+		
+		<property name="validationQuery" value="SELECT 'x'" />
+		<property name="testWhileIdle" value="true" />
+		<property name="testOnBorrow" value="false" />
+		<property name="testOnReturn" value="false" />
+		
+		<!--支持 emoji 4字节 编码-->
+    	<property name="connectionInitSqls" value="set names utf8mb4;"/>
+		<!-- 配置监控统计拦截的filters -->
+	    <property name="filters" value="stat" />
+	</bean>
+	
+	
+	<bean id="baseDAO" class="com.keith.core.dao.BaseDAO"></bean>
+	
+	
+	<!-- 配置只读 -->
+	<bean id="dataSourceRead" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close"> 
+	    <!-- 数据源驱动类可不写，Druid默认会自动根据URL识别DriverClass -->
+	    <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+	    
+		<!-- 基本属性 url、user、password -->
+		<property name="url" value="${rmysqlurl}" />
+		<property name="username" value="${rdbuser}" />
+		<property name="password" value="${rdbpwd}" />
+		
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="initialSize" value="2" />
+		<property name="minIdle" value="2" /> 
+		<property name="maxActive" value="100" />
+		
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="60000" />
+			
+		<property name="removeAbandoned" value="true" />
+        <!-- 超过时间限制多长； -->
+        <property name="removeAbandonedTimeout" value="180" />
+		
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="60000" />
+		
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="300000" />
+		
+		<property name="validationQuery" value="SELECT 'x'" />
+		<property name="testWhileIdle" value="true" />
+		<property name="testOnBorrow" value="false" />
+		<property name="testOnReturn" value="false" />
+		
+		<!--支持 emoji 4字节 编码-->
+    	<property name="connectionInitSqls" value="set names utf8mb4;"/>
+		
+		<!-- 配置监控统计拦截的filters -->
+	    <property name="filters" value="stat" />
+	</bean>
+	
+	
+	
+	
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSourceWrite" />
+	</bean>
+	
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="add*" propagation="NESTED" isolation="READ_COMMITTED" rollback-for="Throwable"/>
+			<tx:method name="pay*" propagation="NESTED" isolation="READ_COMMITTED" rollback-for="Throwable"/>
+			<tx:method name="save*" propagation="NESTED" isolation="READ_COMMITTED" rollback-for="Throwable"/>
+			<tx:method name="create*" propagation="NESTED" isolation="READ_COMMITTED" rollback-for="Throwable"/>
+			<tx:method name="update*" propagation="NESTED" isolation="READ_COMMITTED" rollback-for="Throwable"/>
+			<tx:method name="delete*" propagation="NESTED" isolation="READ_COMMITTED" rollback-for="Throwable"/>
+			<tx:method name="remove*" propagation="NESTED" isolation="READ_COMMITTED" rollback-for="Throwable"/>
+			<tx:method name="*" read-only="true" propagation="NOT_SUPPORTED"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	
+	<bean id ="taskExecutor"  class ="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor" >
+	  <property name ="corePoolSize" value ="5" /> 
+	  <property name ="keepAliveSeconds" value ="300" /> 
+	  <property name ="maxPoolSize" value ="10" /> 
+	  <property name ="queueCapacity" value ="25" /> 
+	</bean> 
+	
+	<task:executor id="executor" pool-size="5" />  
+    <task:scheduler id="scheduler" pool-size="5" />  
+	<task:annotation-driven scheduler="scheduler" executor="executor"/>
+	<aop:aspectj-autoproxy proxy-target-class="true"/> 
+	
+	<!-- 视图文件解析配置 -->
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/views/"/>
+		<property name="suffix" value=".jsp"/>
+	</bean>
+		
+		
+	  <!-- 配置模板 -->
+    <bean id="freeMarkerConfigurer"  
+      class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">  
+      <property name="templateLoaderPaths" value="/WEB-INF/templates/" /><!-- 模板路径位置 -->  
+      <property name="freemarkerSettings">  
+          <props>  
+              <prop key="template_update_delay">1800</prop><!-- 模板更新延时 -->  
+              <prop key="default_encoding">UTF-8</prop>  
+              <prop key="locale">zh_CN</prop>  
+          </props>  
+      </property>  
+  </bean>
+  
+  
+ <!-- 邮件发送配置 -->
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">  
+	       <property name="host" value="${mail.host}" />  
+	       <property name="port" value="${mail.port}" />  
+	       <!-- mail account -->  
+	       <property name="username" value="${mail.username}" />  
+	       <property name="password" value="${mail.password}" />  
+	       <property name="javaMailProperties">  
+	           <props>  
+	            <prop key="mail.smtp.auth">true</prop>
+	            <prop key="mail.smtp.starttls.enable">true</prop>  
+	            <prop key="mail.smtp.socketFactory.port">${mail.port}</prop>  
+	            <prop key="mail.smtp.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>  
+	            <prop key="mail.smtp.socketFactory.fallback">false</prop>     
+	           </props>  
+	       </property>  
+	   </bean>
+</beans>
