@@ -19,6 +19,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -53,14 +54,20 @@ public class HttpClientUtil {
 	 * 通用get请求
 	 * @param url  请求地址
 	 * @param header  请求头设置
+	 * @param connectTimeOut 连接超时时间
+	 * @param readTimeOut 数据读取超时时间
 	 * @return
 	 */
-	public String sendGet(String url,Map<String,Object> header){
+	public String sendGet(String url,Map<String,Object> header,int connectTimeOut,int readTimeOut){
 		HttpClient getClient=client;
 		if(url.toLowerCase().startsWith("https")){
 			getClient=createSSLhttp();
 		}
 		HttpGet get=new HttpGet(url);
+		
+		RequestConfig config=RequestConfig.custom().setSocketTimeout(readTimeOut).setConnectTimeout(connectTimeOut).build();
+		get.setConfig(config);
+		
 		try{
 			//添加请求头
 			if(header!=null&&header.size()>0){
@@ -87,6 +94,202 @@ public class HttpClientUtil {
 		}
 		return null;
 	}
+	
+	/**
+	 * 通用get请求
+	 * @param url  请求地址
+	 * @param header  请求头设置
+	 * @param connectTimeOut 连接超时时间
+	 * @return
+	 */
+	public String sendGet(String url,Map<String,Object> header,int connectTimeOut){
+		HttpClient getClient=client;
+		if(url.toLowerCase().startsWith("https")){
+			getClient=createSSLhttp();
+		}
+		HttpGet get=new HttpGet(url);
+		
+		RequestConfig config=RequestConfig.custom().setConnectTimeout(connectTimeOut).build();
+		get.setConfig(config);
+		
+		try{
+			//添加请求头
+			if(header!=null&&header.size()>0){
+				Set<Entry<String,Object>> ens=header.entrySet();
+				for (Entry<String, Object> entry : ens) {
+					get.addHeader(entry.getKey(), (String)entry.getValue());
+				}
+			}
+			HttpResponse res=getClient.execute(get);
+			int status=res.getStatusLine().getStatusCode();
+			String str=null; 
+			if(status==200){
+				HttpEntity entit=res.getEntity();
+				if(entit!=null){
+					str= EntityUtils.toString(entit);
+					return str;
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+			return null;
+		}finally{
+			get.abort();
+		}
+		return null;
+	}
+	
+	/**
+	 * 通用get请求
+	 * @param url  请求地址
+	 * @param header  请求头设置
+	 * @return
+	 */
+	public String sendGet(String url,Map<String,Object> header){
+		HttpClient getClient=client;
+		if(url.toLowerCase().startsWith("https")){
+			getClient=createSSLhttp();
+		}
+		HttpGet get=new HttpGet(url);
+		
+		try{
+			//添加请求头
+			if(header!=null&&header.size()>0){
+				Set<Entry<String,Object>> ens=header.entrySet();
+				for (Entry<String, Object> entry : ens) {
+					get.addHeader(entry.getKey(), (String)entry.getValue());
+				}
+			}
+			HttpResponse res=getClient.execute(get);
+			int status=res.getStatusLine().getStatusCode();
+			String str=null; 
+			if(status==200){
+				HttpEntity entit=res.getEntity();
+				if(entit!=null){
+					str= EntityUtils.toString(entit);
+					return str;
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+			return null;
+		}finally{
+			get.abort();
+		}
+		return null;
+	}
+	
+	/**
+	 * 通用post请求方法
+	 * @param url  请求地址
+	 * @param params  请求参数
+	 * @param header  请求头
+	 * @param encoding 请求编码
+	 * @param connectTimeOut 连接超时时间
+	 * @param readTimeOut 数据读取超时时间
+	 * @return
+	 */
+	public String sendPost(String url,Map<String,Object> params,Map<String,Object> header,String encoding,int connectTimeOut,int readTimeOut){
+	   //根据请求的类型创建不同的连接
+	   HttpClient postClient=client;
+	   if(url.toLowerCase().startsWith("https")){
+		   postClient=createSSLhttp();
+		}
+		HttpPost post=new HttpPost(url);
+		//添加请求头
+		if(header!=null&&header.size()>0){
+			Set<Entry<String,Object>> ens=header.entrySet();
+			for (Entry<String, Object> entry : ens) {
+				post.addHeader(entry.getKey(), (String)entry.getValue());
+			}
+		}
+		//添加请求参数
+		List<NameValuePair> postList=new ArrayList<NameValuePair>();
+		if(params!=null&&params.size()>0){
+			Set<Entry<String,Object>> ens=params.entrySet();
+			for (Entry<String, Object> entry : ens) {
+				postList.add(new BasicNameValuePair(entry.getKey(),(String)entry.getValue()));
+			}
+		}
+		
+		RequestConfig config=RequestConfig.custom().setSocketTimeout(readTimeOut).setConnectTimeout(connectTimeOut).build();
+		post.setConfig(config);
+		
+		try {
+			//发送请求
+			post.setEntity(new UrlEncodedFormEntity(postList,encoding));
+			HttpResponse res=postClient.execute(post);
+			int status=res.getStatusLine().getStatusCode();
+			if(status==200){
+				HttpEntity entit=res.getEntity();
+				if(entit!=null){
+				  return EntityUtils.toString(entit);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("通用post异常");
+		}finally{
+			post.abort();
+		}
+	   return null;
+	}
+	
+	/**
+	 * 通用post请求方法
+	 * @param url  请求地址
+	 * @param params  请求参数
+	 * @param header  请求头
+	 * @param encoding 请求编码
+	 * @param connectTimeOut 连接超时时间
+	 * @return
+	 */
+	public String sendPost(String url,Map<String,Object> params,Map<String,Object> header,String encoding,int connectTimeOut){
+	   //根据请求的类型创建不同的连接
+	   HttpClient postClient=client;
+	   if(url.toLowerCase().startsWith("https")){
+		   postClient=createSSLhttp();
+		}
+		HttpPost post=new HttpPost(url);
+		//添加请求头
+		if(header!=null&&header.size()>0){
+			Set<Entry<String,Object>> ens=header.entrySet();
+			for (Entry<String, Object> entry : ens) {
+				post.addHeader(entry.getKey(), (String)entry.getValue());
+			}
+		}
+		//添加请求参数
+		List<NameValuePair> postList=new ArrayList<NameValuePair>();
+		if(params!=null&&params.size()>0){
+			Set<Entry<String,Object>> ens=params.entrySet();
+			for (Entry<String, Object> entry : ens) {
+				postList.add(new BasicNameValuePair(entry.getKey(),(String)entry.getValue()));
+			}
+		}
+		
+		RequestConfig config=RequestConfig.custom().setConnectTimeout(connectTimeOut).build();
+		post.setConfig(config);
+		
+		try {
+			//发送请求
+			post.setEntity(new UrlEncodedFormEntity(postList,encoding));
+			HttpResponse res=postClient.execute(post);
+			int status=res.getStatusLine().getStatusCode();
+			if(status==200){
+				HttpEntity entit=res.getEntity();
+				if(entit!=null){
+				  return EntityUtils.toString(entit);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("通用post异常");
+		}finally{
+			post.abort();
+		}
+	   return null;
+	}
+	
 	/**
 	 * 通用post请求方法
 	 * @param url  请求地址
@@ -117,6 +320,7 @@ public class HttpClientUtil {
 				postList.add(new BasicNameValuePair(entry.getKey(),(String)entry.getValue()));
 			}
 		}
+		
 		try {
 			//发送请求
 			post.setEntity(new UrlEncodedFormEntity(postList,encoding));
@@ -136,6 +340,101 @@ public class HttpClientUtil {
 		}
 	   return null;
 	}
+	
+	/**
+	 * 通用post请求   body发送数据
+	 * @param url
+	 * @param context
+	 * @param header
+	 * @param encoding
+	 * @param connectTimeOut 连接超时时间
+	 * @param readTimeOut 数据读取超时时间
+	 * @return
+	 */
+	public String sendPost(String url,String body,Map<String,Object> header,String encoding,int connectTimeOut,int readTimeOut){
+		   //根据请求的类型创建不同的连接
+		   HttpClient postClient=client;
+		   if(url.toLowerCase().startsWith("https")){
+			   postClient=createSSLhttp();
+			}
+			HttpPost post=new HttpPost(url);
+			//添加请求头
+			if(header!=null&&header.size()>0){
+				Set<Entry<String,Object>> ens=header.entrySet();
+				for (Entry<String, Object> entry : ens) {
+					post.addHeader(entry.getKey(), (String)entry.getValue());
+				}
+			}
+			
+			RequestConfig config=RequestConfig.custom().setSocketTimeout(readTimeOut).setConnectTimeout(connectTimeOut).build();
+			post.setConfig(config);
+			
+			try {
+				//发送请求
+				post.setEntity(new StringEntity(body, encoding));
+				HttpResponse res=postClient.execute(post);
+				int status=res.getStatusLine().getStatusCode();
+				if(status==200){
+					HttpEntity entit=res.getEntity();
+					if(entit!=null){
+					  return EntityUtils.toString(entit);
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("通用post异常");
+			}finally{
+				post.abort();
+			}
+		   return null;
+		}
+	/**
+	 * 通用post请求   body发送数据
+	 * @param url
+	 * @param context
+	 * @param header
+	 * @param encoding
+	 * @param connectTimeOut 连接超时时间
+	 * @return
+	 */
+	public String sendPost(String url,String body,Map<String,Object> header,String encoding,int connectTimeOut){
+		   //根据请求的类型创建不同的连接
+		   HttpClient postClient=client;
+		   if(url.toLowerCase().startsWith("https")){
+			   postClient=createSSLhttp();
+			}
+			HttpPost post=new HttpPost(url);
+			//添加请求头
+			if(header!=null&&header.size()>0){
+				Set<Entry<String,Object>> ens=header.entrySet();
+				for (Entry<String, Object> entry : ens) {
+					post.addHeader(entry.getKey(), (String)entry.getValue());
+				}
+			}
+			
+			RequestConfig config=RequestConfig.custom().setConnectTimeout(connectTimeOut).build();
+			post.setConfig(config);
+			
+			try {
+				//发送请求
+				post.setEntity(new StringEntity(body, encoding));
+				HttpResponse res=postClient.execute(post);
+				int status=res.getStatusLine().getStatusCode();
+				if(status==200){
+					HttpEntity entit=res.getEntity();
+					if(entit!=null){
+					  return EntityUtils.toString(entit);
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("通用post异常");
+			}finally{
+				post.abort();
+			}
+		   return null;
+		}
+	
 	/**
 	 * 通用post请求   body发送数据
 	 * @param url
@@ -158,6 +457,8 @@ public class HttpClientUtil {
 					post.addHeader(entry.getKey(), (String)entry.getValue());
 				}
 			}
+			
+			
 			try {
 				//发送请求
 				post.setEntity(new StringEntity(body, encoding));
@@ -177,6 +478,7 @@ public class HttpClientUtil {
 			}
 		   return null;
 		}
+	
 	
 	/**
 	 * 创建https连接
