@@ -496,7 +496,7 @@ public class HttpClientUtil {
                     return true;
                 }
             }).build();
-            SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslContext,SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+            SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslContext);
             //绑定https连接
             sclient= HttpClients.custom().setSSLSocketFactory(sslsf).build();
             return sclient;

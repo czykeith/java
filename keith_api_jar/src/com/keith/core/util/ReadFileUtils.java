@@ -24,7 +24,7 @@ public class ReadFileUtils {
 		}
 		br.close();
 	  }catch(Exception e){
-		  
+		e.printStackTrace();
 	  }
 	  return sb;
   }
